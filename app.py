@@ -1,51 +1,58 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import psycopg2
+from urllib.parse import urlparse
+from routes.delete import handle_delete
+from routes.update import handle_update
+from routes.create import handle_create
+from routes.index import handle_fetch
+from models import create_tasks_table
 
-try:
-    connection = psycopg2.connect(
-        database='test_mydb',
-        user='myuser',
-        password='1234567',
-        host='localhost',
-        port='5432',
-    )
-
-    cursor = connection.cursor()
-    print("db connected")
-
-    cursor.execute("SELECT version();")
-    db_version = cursor.fetchone()
-    print("psql version",db_version)
-except:
-    print("db not connected")
-
-class simpleHandler (BaseHTTPRequestHandler):
+class CRUDHandler (BaseHTTPRequestHandler):
+    
     def do_GET(self):
-        if self.path == '/':
-            self.send_response(200)
-            self.send_header('Content-type','text/plain')
-            self.end_headers()
-            self.wfile.write(b'Hello World!')
-        elif self.path == '/hello':
-            try:
-                with open('index.html') as file:
-                    content = file.read()
-                self.send_response(200)
-                self.send_header('Content-type','text/html')
-                self.end_headers()
-                self.wfile.write(content.encode())
-            except:
-                self.send_response(500)
-                self.send_header('Content-type','text/plain')
-                self.end_headers()
-                self.wfile.write(b'Internal Server Error')
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path == "/":
+            handle_fetch(self)
+            
+        elif path == "/create":
+            with open("templates/create.html", "r") as f:
+                html = f.read()
+            self._send_html(html)
+
+        elif path == "/delete":
+            handle_delete(self)
+
+        elif path == "/update":
+            html = handle_update(self)
+            self._send_html(html)
+
         else:
-            self.send_response(404)
-            self.end_headers()
-            self.wfile.write(b"Route not found")
+            self.send_error(404, "Page not found")
+            
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path == "/create":
+            handle_create(self)
+
+        elif path == "/update":
+            handle_update(self)
+
+        else:
+            self.send_error(404, "Page not found")
+
+    def _send_html(self, html):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write(html.encode())
+
 
 if __name__ == "__main__":
-    server_address = ('',8080)
-    httpd = HTTPServer(server_address,simpleHandler)
-    print("Server is running on http://localhost:8000")
+    create_tasks_table()
+    server_address = ('',8000)
+    httpd = HTTPServer(server_address,CRUDHandler)
+    print("Server is running on http://localhost:8080")
     httpd.serve_forever()

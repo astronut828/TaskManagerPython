@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Task</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; }
+        input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; }
+        button { padding: 10px 20px; background: green; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Create New Task</h1>
+    <form method="POST" action="/create">
+        <input type="text" name="name" placeholder="Title" required />
+        <textarea name="description" placeholder="Description" required></textarea>
+        <button type="submit">Add Task</button>
+    </form>
+</body>
+</html>
